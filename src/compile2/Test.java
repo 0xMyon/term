@@ -152,24 +152,7 @@ class Test {
 		
 	}
 	
-	@org.junit.jupiter.api.Test
-	void testRestriction() {
-		
-		
-		Variable x = new Variable(I, "x");
-		Variable y = new Variable(I, "y");
-		Variable h = new Variable(I, "h");
-		
-		
-		assertTrue(ADD.apply(x, y).hasMatch(ADD.apply(h,h)));
-		assertTrue(ADD.apply(x, x).hasMatch(ADD.apply(h,h)));
-		assertFalse(ADD.apply(x, y.no(x)).hasMatch(ADD.apply(h,h)));
-		
-		assertFalse(LIM.apply(h, x, y.no(h)).hasMatch(LIM.apply(h, ZERO, h)));
-		
-		assertEquals(0, LIM.apply(h, ZERO, h).transit(LIM.apply(h, x, y.no(h)), ZERO).count());
-		
-	}
+	
 	
 	@org.junit.jupiter.api.Test
 	void testTransition() {
@@ -211,8 +194,18 @@ class Test {
 	
 	Expression POW = new Constant("^", I.to(I.to(I)));
 	
-	Expression DERIVE = new Constant("'", I.to(I).to(I.to(I)));
-	Expression LIM = new Constant("lim", A);
+	//Expression DERIVE = new Constant("'", I.to(I).to(I.to(I)));
+	
+	
+	Variable X = new Variable(I, "x");
+	Variable H = new Variable(I, "h");
+	
+	Expression LIM = new Constant("lim", I.to(A).to(I.to(I.to(A))));
+	
+	Expression DERIVE = new Lambda(f -> 
+		LIM.apply(new Lambda(H -> DIVIDE.apply(MINUS.apply( f.apply(ADD.apply(X, H)) , f.apply(X) ), H)), ZERO), 
+		(I.to(I)).to(I.to(I)));
+	
 	
 	
 	
@@ -254,80 +247,129 @@ class Test {
 		C.add(POW.apply(x, INT(1)), x);
 		C.add(POW.apply(x, INC.apply(y)), TIMES.apply(x, POW.apply(x, y)));
 		
-		Variable f = new Variable(I.to(I), "f");
-		Variable h = new Variable(I, "h");
+		C.invalid(DIVIDE.apply(x, ZERO));
+		C.invalid(POW.apply(ZERO, ZERO));
+		
+		Variable lambda = new Variable(A);
+		
+		C.add(LIM.apply(lambda, x), lambda.apply(x));
 		
 		
 		// f'(x) == lim[h->0]: (f(x+h) - f(x)) / h
-		C.add(DERIVE.apply(f), LIM.apply(h, ZERO, DIVIDE.apply(MINUS.apply( f.apply(ADD.apply(x, h)) , f.apply(x) ) ,h)));
+		//C.add(DERIVE.apply(f), LIM.apply(new Lambda(h -> DIVIDE.apply(MINUS.apply( f.apply(ADD.apply(x, h)) , f.apply(x) ) ,h))), ZERO);
 		
 		// lim[h->x]: h == x
-		C.add(LIM.apply(h, x, h), x);
 		
 		// lim[h->x]: y # z == lim[h->x]:y # lim[h->x]:z
-		C.add(LIM.apply(h, x, ADD.apply(y,z)), ADD.apply(LIM.apply(h,x,y), LIM.apply(h,x,z)));
-		C.add(LIM.apply(h, x, TIMES.apply(y,z)), TIMES.apply(LIM.apply(h,x,y), LIM.apply(h,x,z)));
+		//C.add(LIM.apply(h, x, ADD.apply(y,z)), ADD.apply(LIM.apply(h,x,y), LIM.apply(h,x,z)));
+		//C.add(LIM.apply(h, x, TIMES.apply(y,z)), TIMES.apply(LIM.apply(h,x,y), LIM.apply(h,x,z)));
 		
 		// TODO y contains no h
 		// lim[h->x]:y == y (where y does not contain x)
-		C.add(LIM.apply(h, x, y.no(h)), y); 
+		//C.add(LIM.apply(h, x, y.no(h)), y); 
 		
 		
-		final Expression test = new Lambda(ix -> ix, I);
+		//final Expression test = new Lambda(ix -> ix, I);
 		
 		//System.out.println();
 		
-		assertEquals(1, DERIVE.apply(test).transit(DERIVE.apply(f), f).count());
+		//assertEquals(1, DERIVE.apply(test).transit(DERIVE.apply(f), f).count());
 		
 		
 		//System.out.println(C);
+		
+		assertFalse(C.isValid(DIVIDE.apply(ADD.apply(INT(5), INT(15)), INT(0))));
+		
+		{
+			ExpressionClass start = INT(0).CLASS();
+			ExpressionClass goal = INT(1).CLASS();
+			
+			AStar<ExpressionClass> a = new AStar<ExpressionClass>(start, goal, C::next, goal::distance2);
+			
+			assertFalse(a.run(200));
+		}
 		
 		{
 			ExpressionClass start = ADD.apply(INT(2), INT(2)).CLASS();
 			ExpressionClass goal = INT(4).CLASS();
 			
-			AStar<ExpressionClass> a = new AStar<ExpressionClass>(start, goal, C::next, goal::distance);
+			AStar<ExpressionClass> a = new AStar<ExpressionClass>(start, goal, C::next, goal::distance2);
 			
-			a.run();
+			assertTrue(a.run(200));
 		}
 		
 		{
 			ExpressionClass start = TIMES.apply(INT(2), INT(2)).CLASS();
 			ExpressionClass goal = INT(4).CLASS();
 			
-			AStar<ExpressionClass> a = new AStar<ExpressionClass>(start, goal, C::next, goal::distance);
+			AStar<ExpressionClass> a = new AStar<ExpressionClass>(start, goal, C::next, goal::distance2);
 			
-			a.run();
+			assertTrue(a.run(200));
 		}
 		
 		{
 			ExpressionClass start = POW.apply(INT(2), INT(2)).CLASS();
 			ExpressionClass goal = INT(4).CLASS();
 			
-			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance);
+			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance2);
 			
-			a.run(200);
+			assertTrue(a.run(200));
 		}
+		
+		
+		{
+			ExpressionClass start = LIM.apply(new Lambda(h -> h), INT(2)).CLASS();
+			ExpressionClass goal = INT(2).CLASS();
+			
+			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance2);
+			
+			assertTrue(a.run(200));
+		}
+		
+		{
+			ExpressionClass start = LIM.apply(new Lambda(h -> INT(5)), INT(2)).CLASS();
+			ExpressionClass goal = INT(5).CLASS();
+			
+			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance2);
+			
+			assertTrue(a.run(200));
+		}
+		
+		
+		{
+			ExpressionClass start = POW.apply(ADD.apply(x,y), INT(2)) .CLASS();
+			//ExpressionClass goal = TIMES.apply(ADD.apply(x,y), ADD.apply(x,y)) .CLASS();
+			
+			ExpressionClass goal = ADD.apply(POW.apply(x, INT(2)), ADD.apply(TIMES.apply(x, TIMES.apply(y, INT(2))), POW.apply(y, INT(2)))).CLASS();
+			
+			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance2);
+			//a.debug();
+			assertTrue(a.run(2000));
+		}
+		
 		
 		{
 
 			
-			final Expression SQUARE = new Lambda(ix -> POW.apply(ix, INT(2)), I);
+			final Expression SQUARE = new Lambda(ix -> POW.apply(ix, INT(2)), I, "x");
 			final Expression TWICE = new Lambda(ix -> TIMES.apply(ix, INT(2)), I);
+			
+			
+			C.next(LIM.apply(new Lambda(h -> SQUARE, "h")).CLASS()).forEach(System.out::println);
+			
 			
 			ExpressionClass start = DERIVE.apply(SQUARE).CLASS();
 			ExpressionClass goal = TWICE.CLASS();
 			
-			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance);
+			AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, goal::distance2);
 			//AStar<ExpressionClass> a = new AStar<>(start, goal, C::next, ExpressionClass::simplicity);
-			
-			
-			//for(int i=0;i<1000;i++)
-			//	a.debug().run(1);
-			
-			//a.run(2000);
+			//a.debug();
+						
+			assertTrue(a.run(10000));
 		}
-				
+		
+		
+	
 		
 	}
 

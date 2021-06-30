@@ -27,11 +27,19 @@ public class Lambda extends Expression {
 	
 	
 	public Lambda(Function<Expression, Expression> lambda) {
+		this(lambda, "");
+	}
+	
+	public Lambda(Function<Expression, Expression> lambda, String name) {
 		this(lambda, new AnyType());
 	}
 	
 	public Lambda(Function<Expression, Expression> lambda, Type type) {
-		this.variable = new Variable(type);
+		this(lambda, type, "");
+	}
+	
+	public Lambda(Function<Expression, Expression> lambda, Type type, String name) {
+		this.variable = new Variable(type, name);
 		this.expression = lambda.apply(variable);
 	}
 	
@@ -41,9 +49,6 @@ public class Lambda extends Expression {
 	}
 		
 	public static Expression of(Variable variable, Expression expression) {
-		if (null == variable || null == expression) {
-			return null;
-		}
 		return new Lambda(variable, expression);
 	}
 	
@@ -117,6 +122,20 @@ public class Lambda extends Expression {
 	@Override
 	public boolean isValid() {
 		return expression.isValid();
+	}
+
+	
+	public int distance2(Expression other, Map<Variable, Variable> map) {
+		if (other instanceof Lambda) {
+			Lambda that = (Lambda) other;
+			return variable.distance2(that.variable, map) + this.expression.distance2(that.expression, map);
+		}
+		return super.distance2(other, map);
+	}
+	
+	@Override
+	public int size() {
+		return 1 + expression.size();
 	}
 
 }

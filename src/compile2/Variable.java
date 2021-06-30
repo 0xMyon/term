@@ -38,7 +38,7 @@ public class Variable extends Expression {
 	
 		
 	@Override
-	public Optional<Expression> findMatch(Expression that, Map<Variable, Expression> map) {
+	public Optional<? extends Variable> findMatch(Expression that, Map<Variable, Expression> map) {
 		if (map.containsKey(this)) {
 			Expression value = map.get(this);
 			if (value instanceof Variable) {
@@ -105,6 +105,27 @@ public class Variable extends Expression {
 		return true;
 	}
 
+	public int distance2(Expression other, Map<Variable, Variable> map) {
+		if (other instanceof Variable) {
+			Variable that = (Variable) other;
+			if (!map.containsKey(this)) {
+				map.put(this, that);
+				return 0;
+			} else {
+				return map.get(this).id == that.id ? 0 : 1;
+			}
+		}
+		return super.distance2(other, map);
+	}
 	
+	@Override
+	public int size() {
+		return 1;
+	}
+
+	@Override
+	public Expression replaceR(Expression that, Expression replacement) {
+		return this;
+	}
 
 }

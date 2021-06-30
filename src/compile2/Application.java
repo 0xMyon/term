@@ -24,22 +24,20 @@ public class Application extends Expression {
 	}
 	
 	static Expression of(Expression function, Expression parameter) {
-		if (null == function || null == parameter)
-			return null;
 		return new Application(function, parameter);
 	}
 
 	@Override
 	public Expression replaceR(Expression variable, Expression param) {
-		return new Application(function.replace(variable, param), parameter.replace(variable, param));
+		return function.replace(variable, param).apply(parameter.replace(variable, param));
 	}
 	
 	public Stream<Map<Variable, Expression>> findMatchesR(Expression that) {
 		return Stream.concat(function.findMatches(that).map(m -> {
-			m.put(null, new Application(m.get(null), parameter));
+			m.put(null, m.get(null).apply(parameter));
 			return m;
 		}), parameter.findMatches(that).map(m -> {
-			m.put(null, new Application(function, m.get(null)));
+			m.put(null, function.apply(m.get(null)));
 			return m;
 		}));
 	}
@@ -100,6 +98,20 @@ public class Application extends Expression {
 	@Override
 	public boolean isValid() {
 		return function.isValid() && parameter.isValid();
+	}
+
+	@Override
+	public int distance2(Expression other, Map<Variable, Variable> map) {
+		if (other instanceof Application) {
+			Application that = (Application) other;
+			return this.function.distance2(that.function, map) + this.parameter.distance2(that.parameter, map);
+		}
+		return super.distance2(other, map);
+	}
+	 
+	@Override
+	public int size() {
+		return 1 + function.size() + parameter.size();
 	}
 	
 }

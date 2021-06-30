@@ -72,13 +72,14 @@ public class AStar<T> {
 		
 		next.apply(current.node).forEach(t -> {
 			
-			if (debug) System.out.println("    check: "+t);
+			
+			//if (debug) System.out.println("    check: "+t);
 			
 			//int s = 0*Math.abs(t.toString().length() - current.toString().length());
 			
 			if (nodes.containsKey(t)) {
 				Node n = nodes.get(t);
-				int g = current.gscore + 1;
+				int g = current.gscore + STEP_SIZE;
 				if(g < n.gscore) {
 					n.trace = current;
 					n.gscore = g;
@@ -88,7 +89,7 @@ public class AStar<T> {
 				}
 				
 			} else {
-				nodes.put(t, new Node(t, current.gscore + 1, distance.apply(t), current));
+				nodes.put(t, new Node(t, current.gscore + STEP_SIZE, distance.apply(t), current));
 			}
 			
 			
@@ -110,9 +111,10 @@ public class AStar<T> {
 		while(!open.isEmpty() && !step()) {}
 	}
 	
-	public void run(int i) {
+	public boolean run(int i) {
 		while(!open.isEmpty() && !step() && i-- >= 0) {}
 		System.out.println("Open: "+open.size());
+		return i > 0;
 	}
 	
 	private class Node {
@@ -153,7 +155,12 @@ public class AStar<T> {
 		return this;
 	}
 
+	private int STEP_SIZE = 1;
 	
+	public AStar<T> ssize(int size) {
+		STEP_SIZE = size;
+		return this;
+	}
 	
 	
 	

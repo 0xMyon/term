@@ -28,6 +28,9 @@ public class ExpressionClass {
 	public int distance(ExpressionClass e) {
 		return expression.distance(e.expression);
 	}
+	public int distance2(ExpressionClass e) {
+		return expression.distance2(e.expression);
+	}
 	
 	public int simplicity() {
 		return expression.simplicity();

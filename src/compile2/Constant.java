@@ -28,8 +28,8 @@ public class Constant extends Expression {
 
 
 	@Override
-	public Optional<Expression> findMatch(Expression that, Map<Variable, Expression> map) {
-		return isIdentical(that) ? Optional.of(that) : Optional.empty();
+	public Optional<Expression> findMatch(Expression other, Map<Variable, Expression> map) {
+		return isIdentical(other) ? Optional.of(other) : Optional.empty();
 	}
 	
 	@Override
@@ -77,6 +77,28 @@ public class Constant extends Expression {
 	@Override
 	public boolean isValid() {
 		return true;
+	}
+
+
+	@Override
+	public int distance2(Expression other, Map<Variable, Variable> map) {
+		if (other instanceof Constant) {
+			Constant that = (Constant) other;
+			return this.name.equals(that.name) ? 0 : 1;
+		}
+		return super.distance2(other, map);
+	}
+
+
+	@Override
+	public int size() {
+		return 1;
+	}
+
+
+	@Override
+	public Expression replaceR(Expression that, Expression replacement) {
+		return this;
 	}
 
 

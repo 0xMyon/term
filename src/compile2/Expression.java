@@ -70,9 +70,7 @@ public abstract class Expression {
 	 * @return a new {@link Expression} where all occurrences are replaced
 	 * @see #replace(Expression, Expression)
 	 */
-	public Expression replaceR(Expression that, Expression replacement) {
-		return this;
-	}
+	public abstract Expression replaceR(Expression that, Expression replacement);
 	
 	/**
 	 * Replaces all {@link Expression} keys by {@link Expression} values
@@ -95,7 +93,7 @@ public abstract class Expression {
 	 */
 	public final Stream<Map<Variable, Expression>> findMatches(Expression that) {
 		Map<Variable, Expression> map = new HashMap<>();
-		Optional<Expression> match = that.findMatch(this, map);
+		Optional<? extends Expression> match = that.findMatch(this, map);
 		if (match.isPresent()) {
 			map.put(null, match.get());
 			return Stream.concat(findMatchesR(that), Stream.of(map));
@@ -114,18 +112,8 @@ public abstract class Expression {
 		return Stream.of();
 	}
 
-	/**
-	 * gets the mapping of a match for displaying purposes
-	 * @param that sub-expression to be searched for
-	 * @return the mapping
-	 * @see #findMatch(Expression, Map)
-	 */
-	@Deprecated
-	public final Map<Variable, Expression> getMatch(Expression that) {
-		Map<Variable,Expression> map = new HashMap<>();
-		return null != findMatch(that, map) ? map : null;
-	}
-	
+
+
 	public abstract boolean isIdentical(Expression that);
 	
 	/**
@@ -162,9 +150,11 @@ public abstract class Expression {
 	 * Finds a match to that {@link Expression} in this {@link Expression}
 	 * @param that sub-expression to be searched for
 	 * @param map mapping to revert the match such that {@code this.findMatch(that, map).replaceAll(map) == that}
-	 * @return null, if no match was found or a new {@link Expression} with {@link Variable} inserted where they matched
+	 * @return if a match was found: new {@link Expression} with {@link Variable} inserted where they matched
 	 */
-	public abstract Optional<Expression> findMatch(Expression that, Map<Variable, Expression> map);
+	public abstract Optional<? extends Expression> findMatch(Expression that, Map<Variable, Expression> map);
+	
+	// TODO findMatch does always return a copy of this - why make the copy???
 	
 	/**
 	 * replaces matches with an {@link Expression} with another
@@ -223,6 +213,18 @@ public abstract class Expression {
 		return isEqual(that) ? 0 : Util.distance(this.toString(), that.toString());
 	}
 	
+	
+	public final int distance2(Expression that) {
+		return distance2(that, new HashMap<>());
+	}
+	
+	public int distance2(Expression that, Map<Variable, Variable> map) {
+		return (this.size() + that.size()) / 2;
+	}
+	
+	public abstract int size();
+	
+	
 	public final ExpressionClass CLASS() {
 		return new ExpressionClass(this);
 	}
@@ -251,11 +253,6 @@ public abstract class Expression {
 		R handle(Constant that);
 		R handle(Lambda that);
 		R handle(Variable that);
-		R handle(Restriction restriction);
-	}
-	
-	public Expression no(Variable x) {
-		return Restriction.of(this, x);
 	}
 
 
